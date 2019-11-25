@@ -1,0 +1,8 @@
+{
+    "require": {
+        "box/spout": "^2.7",
+        "twbs/bootstrap": "4.0.0-alpha.6",
+        "tecnickcom/tcpdf": "^6.2",
+        "heartsentwined/file-system-manager": "^2.0"
+    }
+}
