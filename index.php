@@ -770,21 +770,21 @@ class TodoList
         echo "<h2>todolist-web <small>v".$this->version."</small></h2>"."\r\n";
         echo '<table border="0" cellspacing="0" cellpadding="2" style="border-color:#f1f1f1; font-family: courier;font-size:15px;">'."\r\n";
         // SCREEN        
-        echo '<tr><td><a href="?mode=screen"><b>screen</b></a>'." </td><td> HTML table with all the tasks. </td></tr>\r\n";
-        echo '<tr><td><a href="?mode=screen_year&year='.date("Y").'"><b>screen_year</b></a>'." </td><td> HTML table with all the tasks ended on a year. </td></tr>\r\n";
-        echo '<tr><td><a href="?mode=screen_year_month&year='.date("Y").'&month='.date("m").'"><b>screen_year_month</b></a>'." </td><td> HTML table with all the tasks ended on a year and month. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=screen" target="_blank"><b>screen</b></a>'." </td><td> HTML table with all the tasks. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=screen_year&year='.date("Y").'" target="_blank"><b>screen_year</b></a>'." </td><td> HTML table with all the tasks ended on a year. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=screen_year_month&year='.date("Y").'&month='.date("m").'" target="_blank"><b>screen_year_month</b></a>'." </td><td> HTML table with all the tasks ended on a year and month. </td></tr>\r\n";
         // DOWNLOAD
-        echo '<tr><td><a href="?mode=download"><b>download</b></a>'." </td><td> Download a CSV with all the tasks. </td></tr>\r\n";
-        echo '<tr><td><a href="?mode=download_year&year='.date("Y").'"><b>download_year</b></a>'." </td><td> Download a CSV with all the tasks ended on a year. </td></tr>\r\n";
-        echo '<tr><td><a href="?mode=download_year_month&year='.date("Y").'&month='.date("m").'"><b>download_year_month</b></a>'." </td><td> Download a CSV with all the tasks ended on a year and month. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=download" target="_blank"><b>download</b></a>'." </td><td> Download a CSV with all the tasks. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=download_year&year='.date("Y").'" target="_blank"><b>download_year</b></a>'." </td><td> Download a CSV with all the tasks ended on a year. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=download_year_month&year='.date("Y").'&month='.date("m").'" target="_blank"><b>download_year_month</b></a>'." </td><td> Download a CSV with all the tasks ended on a year and month. </td></tr>\r\n";
         // DOKUWIKI
-        echo '<tr><td><a href="?mode=dokuwiki"><b>dokuwiki</b></a>'." </td><td> Creates a DokuWiki table with all the tasks. </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=dokuwiki" target="_blank"><b>dokuwiki</b></a>'." </td><td> Creates a DokuWiki table with all the tasks. </td></tr>\r\n";
         // listCSV - listTDL
-        echo '<tr><td><a href="?mode=listcsv"><b>listcsv</b></a>'." </td><td> List all files (*.csv) </td></tr>\r\n";
-        echo '<tr><td><a href="?mode=listtdl"><b>listtdl</b></a>'." </td><td> List all files (*.tdl) </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=listcsv" target="_blank"><b>listcsv</b></a>'." </td><td> List all files (*.csv) </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=listtdl" target="_blank"><b>listtdl</b></a>'." </td><td> List all files (*.tdl) </td></tr>\r\n";
         echo '</table>';
 
-        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank">Download ToDoList 7.2</a>';
+        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank">Download ToDoList v8</a>';
     }
 
 }
