@@ -28,3 +28,4 @@ Homestead.json
 
 # XMind
 *.xmind
+composer.lock
