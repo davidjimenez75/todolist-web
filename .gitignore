@@ -25,7 +25,11 @@ Homestead.json
 *.tdl
 *.txt
 *.csv
+*.---
 
 # XMind
 *.xmind
 composer.lock
+todolist-web/desktop.ini
+favicon.ico
+00-GITHUB--todolist-web.url
