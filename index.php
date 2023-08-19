@@ -3,24 +3,27 @@
  * Create a CSV with all the CSV LOGS from TODOLIST (http://www.abstractspoon.com)
  *
  * @todo - Some TimeSpent are with commas instead of decimal dots (spanish vs english)
+ * @wip - Compatibility with new _log CSV files with UTF-8 instead of UTF-16
  * 
  */
 
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
+
 require __DIR__ . '/vendor/autoload.php';
-
 use \Yalesov\FileSystemManager\FileSystemManager;
-
 $todolist = new TodoList;
 
 class TodoList
 {
-    public $version = "0.191125";
+    public $version = "2023.08.19.1118";
     public $a_csv = array();
     public $a_tdl = array();
     public $debug = 0;
     public $logsDir = ".";
     public $rootDir = "c://TODOLIST/";
-
+    
     /**
      * TodoListconstructor
      */
@@ -28,6 +31,14 @@ class TodoList
     {
         $this->csvList();
         $this->tdlList();
+
+        // Unicode BOM is U+FEFF, but after encoded, it will look like this.
+        define ('UTF32_BIG_ENDIAN_BOM'   , chr(0x00) . chr(0x00) . chr(0xFE) . chr(0xFF));
+        define ('UTF32_LITTLE_ENDIAN_BOM', chr(0xFF) . chr(0xFE) . chr(0x00) . chr(0x00));
+        define ('UTF16_BIG_ENDIAN_BOM'   , chr(0xFE) . chr(0xFF));
+        define ('UTF16_LITTLE_ENDIAN_BOM', chr(0xFF) . chr(0xFE));
+        define ('UTF8_BOM'               , chr(0xEF) . chr(0xBB) . chr(0xBF));
+
 
         // DEBUG
         if ($this->debug) {
@@ -52,6 +63,27 @@ class TodoList
         }
     }
 
+
+        
+    /**
+     * Unicode BOM is U+FEFF, but after encoded, it will look like this.
+     */
+    public function detect_utf_encoding($filename) {
+        $text = file_get_contents($filename);
+        $first2 = substr($text, 0, 2);
+        $first3 = substr($text, 0, 3);
+        $first4 = substr($text, 0, 3);
+        
+        if ($first3 == UTF8_BOM) return 'UTF-8';
+        elseif ($first4 == UTF32_BIG_ENDIAN_BOM) return 'UTF-32BE';
+        elseif ($first4 == UTF32_LITTLE_ENDIAN_BOM) return 'UTF-32LE';
+        elseif ($first2 == UTF16_BIG_ENDIAN_BOM) return 'UTF-16BE';
+        elseif ($first2 == UTF16_LITTLE_ENDIAN_BOM) return 'UTF-16LE';
+        else return 'UNKNOWN';
+    }
+
+
+
     /**
      * Get the list of .csv files in the folder to $a_csv global array.
      */
@@ -60,7 +92,7 @@ class TodoList
         $ignored_strings=array(".hidden","zztodolist"); // Ignored files is containt any of this strings
 
         foreach (FileSystemManager::fileIterator($this->logsDir) as $file) {
-            if (substr($file, -4) == ".csv") {
+            if ( (substr($file, -4) == ".csv") && (substr_count($file,"_Log")) ){
                 
                 $count=0;
                 foreach($ignored_strings as $key=>$val)
@@ -185,10 +217,25 @@ class TodoList
      */
     function csvListDebug()
     {
+        // ARRAY CSV
+        echo "<h2>CSV RECURSIVE LIST:</h2>";
         echo "<pre>";
         print_r($this->a_csv);
         echo "</pre>";
+
+        // BOM CSV
+        echo "<hr><h2>BOM CSV:</h2>";
+        foreach ($this->a_csv as $key => $val)
+        {
+            $file_encoding="";
+            echo $val;
+            echo "=";
+            echo $this->detect_utf_encoding($val);
+            echo "<br>";
+        }
     }
+
+
 
     /**
      * MODE: download -> Send a long csv with all the csv's 
@@ -200,7 +247,12 @@ class TodoList
 
         // CSV TITLE FIRST LINE
         $fp = fopen($filename, 'a');
-        $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        if ($this->detect_utf_encoding($val)=="UTF-16LE")
+        {   
+            $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        }else{
+            $str = "Project;TaskID;Title;UserID;StartDate;StartTime;EndDate;EndTime;TimeSpent;Comment;Type;Path";
+        }
         fwrite($fp, $str);
         fclose($fp);
 
@@ -212,30 +264,32 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            $fp = fopen($filename, 'a');
-                            $v = "\n" . $title . "\t" . $v;
-                            fwrite($fp, $v);
-                            fclose($fp);
-                        }
-                    }
-                    $i++;
-                }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
             }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        $fp = fopen($filename, 'a');
+                        $v = "\n" . $title . $csv_separator . $v;
+                        fwrite($fp, $v);
+                        fclose($fp);
+                    }
+                }
+                $i++;
+            }
+
 
 
         }
@@ -280,7 +334,12 @@ class TodoList
 
         // CSV TITLE FIRST LINE
         $fp = fopen($filename, 'a');
-        $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        if ($this->detect_utf_encoding($val)=="UTF-16LE")
+        {   
+            $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        }else{
+            $str = "Project;TaskID;Title;UserID;StartDate;StartTime;EndDate;EndTime;TimeSpent;Comment;Type;Path";
+        }
         fwrite($fp, $str);
         fclose($fp);
 
@@ -292,40 +351,41 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
-
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            $a_task=explode("\t",$v);
-                            //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
-                            // StartDate=field 3
-                            // EndDate=field 5
-                            // WorkTime=field 7
-                            // FILTER BY END DATE YEAR FIELD
-                            if (substr_count($a_task[5],$year)>0) 
-                            {
-                                // FILTER
-                                $fp = fopen($filename, 'a');
-                                $v = "\n" . $title . "\t" . $v;
-                                fwrite($fp, $v);
-                                fclose($fp);
-                            }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
+            }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        $a_task=explode($csv_separator,$v);
+                        //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
+                        // StartDate=field 3
+                        // EndDate=field 5
+                        // WorkTime=field 7
+                        // FILTER BY END DATE YEAR FIELD
+                        if (substr_count($a_task[5],$year)>0) 
+                        {
+                            // FILTER
+                            $fp = fopen($filename, 'a');
+                            $v = "\n" . $title . $csv_separator . $v;
+                            fwrite($fp, $v);
+                            fclose($fp);
                         }
                     }
-                    $i++;
                 }
+                $i++;
             }
+
 
 
         }
@@ -352,8 +412,8 @@ class TodoList
      */
     function dokuwiki()
     {
-        $str  = "|Project|TaskID|Title|UserID|TaskStartDate|StartTime|TaskEndDate|EndTime|TimeSpent|Comment|Type|Path|\r\n";
-        $str .= "|-------|------|-----|------|-------------|---------|-----------|-------|---------|-------|----|----|\r\n";
+        $str  = "|Project|TaskID|Title|UserID|TaskStartDate|StartTime|TaskEndDate|EndTime|TimeSpent|Comment|Type|Path|<br>\r\n";
+        $str .= "|-------|------|-----|------|-------------|---------|-----------|-------|---------|-------|----|----|<br>\r\n";
         echo $str;
         foreach ($this->a_csv as $key => $val) {
             $temp = file_get_contents($val);
@@ -362,35 +422,37 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            // REPLACING DOKUWIKI NOR COMPATIBLE CHARS
-                            $v=str_replace("|","--",$v);
-                            $v = "\n" . $title . "\t" . $v;
-                            $v=str_replace("\t","|",$v);
-                            $v=str_replace("||","| |",$v);
-                            $v=str_replace("_"," ",$v);
-                            // SPANISH TO ENGLISH
-                            $v=str_replace("|Rastreado|","|Tracked|",$v);
-                            echo "|".trim($v)."|\r\n";
-                        }
-                    }
-                    $i++;
-                }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
             }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        // REPLACING DOKUWIKI NOR COMPATIBLE CHARS
+                        $v=str_replace("|","--",$v);
+                        $v = "\n" . $title . "\t" . $v;
+                        $v=str_replace("\t","|",$v);
+                        $v=str_replace("||","| |",$v);
+                        $v=str_replace("_"," ",$v);
+                        // SPANISH TO ENGLISH
+                        $v=str_replace("|Rastreado|","|Tracked|",$v);
+                        echo "|".trim($v)."|<br>\r\n";
+                    }
+                }
+                $i++;
+            }
+            
 
 
         }
@@ -416,12 +478,18 @@ class TodoList
             similar_text($todotimelog, 'TODOTIMELOG', $percent);
 
             // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
+            if ($percent = 55) {
 
                 $title = substr($val, strlen($this->logsDir) + 1, -8);
 
                 // CSV IS CODED IN UCS-2 LE BOM
-                $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
+                if ($this->detect_utf_encoding($val)=="UTF-16LE")
+                {                
+                    $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
+                    $csv_separator="\t";
+                }else{
+                    $csv_separator=";";   
+                }
                 $a_temp = explode("\n", $temp);
                 $i = 1;
                 // BY LINES
@@ -430,8 +498,8 @@ class TodoList
                         if (strlen($v) > 5) {
                             // REPLACING DOKUWIKI NOT COMPATIBLE CHARS
                             $v=str_replace("|","--",$v);
-                            $v = "\n" . $title . "\t" . $v;
-                            $v=str_replace("\t","|",$v);
+                            $v = "\n" . $title . $csv_separator . $v;
+                            $v=str_replace($csv_separator,"|",$v);
                             $v=str_replace("||","| |",$v);
                             $v=str_replace("_"," ",$v);
                             // SPANISH TO ENGLISH
@@ -480,47 +548,47 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
-
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            // REPLACING DOKUWIKI NOT COMPATIBLE CHARS
-                            $v=str_replace("|","--",$v);
-                            $a_task=explode("\t",$v);
-                            
-                            //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
-                            // StartDate=field 3
-                            // EndDate=field 5
-                            // WorkTime=field 7
-                            // FILTER BY END DATE YEAR FIELD
-                            if (substr_count($a_task[5],$year)>0) 
-                            {
-                                $workTime+=str_replace(",",".",$a_task[7]);
-                                $v = "\n" . $title . "\t" . $v;
-                                $v=str_replace("\t","|",$v);
-                                $v=str_replace("||","| |",$v);
-                                $v=str_replace("_"," ",$v);
-                                // SPANISH TO ENGLISH
-                                $v=str_replace("|Rastreado|","|Tracked|",$v);
-                                // TO TABLE
-                                $v=str_replace("|","</td><td>",$v);
-                                echo "<tr><td>".trim($v)."</td></tr>\r\n";
-                            }                            
-                        }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
+            }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        // REPLACING DOKUWIKI NOT COMPATIBLE CHARS
+                        $v=str_replace("|","--",$v);
+                        $a_task=explode($csv_separator,$v);
+                        
+                        // echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
+                        // StartDate=field 3
+                        // EndDate=field 5
+                        // WorkTime=field 7
+                        // FILTER BY END DATE YEAR FIELD
+                        if (substr_count($a_task[5],$year)>0) 
+                        {
+                            $workTime+=str_replace(",",".",$a_task[7]);
+                            $v = "\n" . $title . $csv_separator . $v;
+                            $v=str_replace($csv_separator,"|",$v);
+                            $v=str_replace("||","| |",$v);
+                            $v=str_replace("_"," ",$v);
+                            // SPANISH TO ENGLISH
+                            $v=str_replace("|Rastreado|","|Tracked|",$v);
+                            // TO TABLE
+                            $v=str_replace("|","</td><td>",$v);
+                            echo "<tr><td>".trim($v)."</td></tr>\r\n";
+                        }                            
                     }
-                    $i++;
                 }
+                $i++;
             }
 
 
@@ -580,47 +648,48 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
+ 
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
-
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            // REPLACING DOKUWIKI NOT COMPATIBLE CHARS
-                            $v=str_replace("|","--",$v);
-                            $a_task=explode("\t",$v);
-                            
-                            //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
-                            // StartDate=field 3
-                            // EndDate=field 5
-                            // WorkTime=field 7
-                            // FILTER BY END DATE YEAR FIELD
-                            if (substr_count($a_task[5],$year."-".$month)>0) 
-                            {
-                                $workTime+=str_replace(",",".",$a_task[7]);
-                                $v = "\n" . $title . "\t" . $v;
-                                $v=str_replace("\t","|",$v);
-                                $v=str_replace("||","| |",$v);
-                                $v=str_replace("_"," ",$v);
-                                // SPANISH TO ENGLISH
-                                $v=str_replace("|Rastreado|","|Tracked|",$v);
-                                // TO TABLE
-                                $v=str_replace("|","</td><td>",$v);
-                                echo "<tr><td>".trim($v)."</td></tr>\r\n";
-                            }                            
-                        }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
+            }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        // REPLACING DOKUWIKI NOT COMPATIBLE CHARS
+                        $v=str_replace("|","--",$v);
+                        $a_task=explode($csv_separator,$v);
+                        
+                        //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
+                        // StartDate=field 3
+                        // EndDate=field 5
+                        // WorkTime=field 7
+                        // FILTER BY END DATE YEAR FIELD
+                        if (substr_count($a_task[5],$year."-".$month)>0) 
+                        {
+                            $workTime+=str_replace(",",".",$a_task[7]);
+                            $v = "\n" . $title . $csv_separator . $v;
+                            $v=str_replace($csv_separator,"|",$v);
+                            $v=str_replace("||","| |",$v);
+                            $v=str_replace("_"," ",$v);
+                            // SPANISH TO ENGLISH
+                            $v=str_replace("|Rastreado|","|Tracked|",$v);
+                            // TO TABLE
+                            $v=str_replace("|","</td><td>",$v);
+                            echo "<tr><td>".trim($v)."</td></tr>\r\n";
+                        }                            
                     }
-                    $i++;
                 }
+                $i++;
             }
 
 
@@ -670,7 +739,12 @@ class TodoList
 
         // CSV TITLE FIRST LINE
         $fp = fopen($filename, 'a');
-        $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        if ($this->detect_utf_encoding($val)=="UTF-16LE")
+        {   
+            $str = "Project\tTaskID\tTitle\tUserID\tStartDate\tStartTime\tEndDate\tEndTime\tTimeSpent\tComment\tType\tPath";
+        }else{
+            $str = "Project;TaskID;Title;UserID;StartDate;StartTime;EndDate;EndTime;TimeSpent;Comment;Type;Path";
+        }
         fwrite($fp, $str);
         fclose($fp);
 
@@ -682,40 +756,42 @@ class TodoList
             $todotimelog = substr($temp, 2, 21);
             $todotimelog = str_replace(' ', '', $todotimelog);
             $todotimelog = serialize($todotimelog);
-            similar_text($todotimelog, 'TODOTIMELOG', $percent);
 
-            // IS A TODOTIMELOG CSV FILE???
-            if ($percent == 55) {
+            $title = substr($val, strlen($this->logsDir) + 1, -8);
 
-                $title = substr($val, strlen($this->logsDir) + 1, -8);
-
-                // CSV IS CODED IN UCS-2 LE BOM
+            // CSV IS CODED IN UCS-2 LE BOM
+            if ($this->detect_utf_encoding($val)=="UTF-16LE")
+            {                
                 $temp = iconv('UCS-2LE', 'UTF-8', substr($temp, 0));//last byte was invalid
-                $a_temp = explode("\n", $temp);
-                $i = 1;
-                // BY LINES
-                foreach ($a_temp as $k => $v) {
-                    if ($i > 2) {
-                        if (strlen($v) > 5) {
-                            $a_task=explode("\t",$v);
-                            //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
-                            // StartDate=field 3
-                            // EndDate=field 5
-                            // WorkTime=field 7
-                            // FILTER BY END DATE YEAR FIELD
-                            if (substr_count($a_task[5],$year."-".$month)>0) 
-                            {
-                                // FILTER
-                                $fp = fopen($filename, 'a');
-                                $v = "\n" . $title . "\t" . $v;
-                                fwrite($fp, $v);
-                                fclose($fp);
-                            }
+                $csv_separator="\t";
+            }else{
+                $csv_separator=";";   
+            }
+            $a_temp = explode("\n", $temp);
+            $i = 1;
+            // BY LINES
+            foreach ($a_temp as $k => $v) {
+                if ($i > 2) {
+                    if (strlen($v) > 5) {
+                        $a_task=explode($csv_separator,$v);
+                        //echo "<pre>".var_dump($a_task)."</pre>";// DEBUG
+                        // StartDate=field 3
+                        // EndDate=field 5
+                        // WorkTime=field 7
+                        // FILTER BY END DATE YEAR FIELD
+                        if (substr_count($a_task[5],$year."-".$month)>0) 
+                        {
+                            // FILTER
+                            $fp = fopen($filename, 'a');
+                            $v = "\n" . $title . $csv_separator . $v;
+                            fwrite($fp, $v);
+                            fclose($fp);
                         }
                     }
-                    $i++;
                 }
+                $i++;
             }
+            
 
 
         }
