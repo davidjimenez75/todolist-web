@@ -23,7 +23,7 @@ class TodoList
     public $a_html = array();
     public $debug = 0;
     public $logsDir = ".";
-    public $rootDir = "c:\\xampp\\htdocs\\";
+    public $rootDir = "c://xampp/htdocs/";
 
     
     /**
@@ -159,7 +159,7 @@ class TodoList
         $ignored_strings=array(".hidden","zztodolist"); // Ignored files is containt any of this strings
 
         foreach (FileSystemManager::fileIterator($this->logsDir) as $file) {
-            if (substr($file, -4) == ".tdl") {
+            if ( (substr($file, -4) == ".tdl") && (!substr_count($file,".done")) ) {
                 
                 $count=0;
                 foreach($ignored_strings as $key=>$val)
