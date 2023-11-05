@@ -17,12 +17,14 @@ $todolist = new TodoList;
 
 class TodoList
 {
-    public $version = "2023.08.19.1118";
+    public $version = "2023.11.05.1205";
     public $a_csv = array();
     public $a_tdl = array();
+    public $a_html = array();
     public $debug = 0;
     public $logsDir = ".";
-    public $rootDir = "c://TODOLIST/";
+    public $rootDir = "c:\\xampp\\htdocs\\";
+
     
     /**
      * TodoListconstructor
@@ -31,6 +33,7 @@ class TodoList
     {
         $this->csvList();
         $this->tdlList();
+        $this->htmlList();
 
         // Unicode BOM is U+FEFF, but after encoded, it will look like this.
         define ('UTF32_BIG_ENDIAN_BOM'   , chr(0x00) . chr(0x00) . chr(0xFE) . chr(0xFF));
@@ -46,14 +49,14 @@ class TodoList
             die();
         }
         
-        $modes=array("screen", "screen_year", "screen_year_month", "download", "download_year", "download_year_month", "dokuwiki", "listcsv", "listtdl");
+        $modes=array("screen", "screen_year", "screen_year_month", "download", "download_year", "download_year_month", "dokuwiki", "listcsv", "listtdl", "listhtml");
 
         if (isset($_GET["mode"]))
         {
             if (in_array($_GET["mode"],$modes))
             {
-                $this->mode=$_GET["mode"];
-                $this->{$_GET["mode"]}();
+                $mode=$_GET["mode"];
+                $this->$mode();
             }else{
                 $this->help();   // show help
             }
@@ -211,6 +214,73 @@ class TodoList
         echo '</body>';
         echo '</html>';
     }
+
+
+    /**
+     * Get the list of .csv files in the folder to $a_csv global array.
+     */
+    function htmlList()
+    {
+        $ignored_strings=array(".hidden","zztodolist"); // Ignored files is containt any of this strings
+
+        foreach (FileSystemManager::fileIterator($this->logsDir) as $file) {
+            if ( (substr($file, -5) == ".html") && (!substr_count($file,"vendor")) ){
+                
+                $count=0;
+                foreach($ignored_strings as $key=>$val)
+                {
+                    //echo $file." BUSCANDO: $val ($count)<br>"; //debug
+                    $count+=substr_count($file, $val);
+                }
+                
+                if ($count==0)
+                {
+                    // echo $file."<br>"; //debug
+                    $this->a_html[] = $file;
+                }
+
+            }
+        }
+    }
+
+
+    /**
+     * MODE: listtdl -> List all .tdl files with direct link with tdl:// ()
+     */
+    function listhtml()
+    {
+        echo '<html>
+        <head>
+           <style type="text/css"><!--
+              html { 
+                  font-size: 11px!important; 
+                  font-family: courier new;
+              }
+              a {
+                  font-size: 11px!important; 
+                  font-family: courier new;
+     
+                  text-decoration:none;
+                  color:blue;
+              }
+              a:hover {
+                  color:red;
+              }
+                   --></style>
+        </head>
+        <body>';
+        $count=0;
+        echo '<table border="0" cellspacing="0" cellpadding="2">'."\r\n";        
+        foreach($this->a_html as $key=>$val)
+        {
+            echo '<tr><td><a href="./'.$val.'" style="text-decoration:none;" target="_blank">'.substr($val,2).'</a>'."</td></tr>";
+        }
+        echo '</table>';
+        echo '</body>';
+        echo '</html>';
+    }
+
+
 
     /**
      *
@@ -858,9 +928,10 @@ class TodoList
         // listCSV - listTDL
         echo '<tr><td><a href="?mode=listcsv" target="_blank"><b>listcsv</b></a>'." </td><td> List all files (*.csv) </td></tr>\r\n";
         echo '<tr><td><a href="?mode=listtdl" target="_blank"><b>listtdl</b></a>'." </td><td> List all files (*.tdl) </td></tr>\r\n";
+        echo '<tr><td><a href="?mode=listhtml" target="_blank"><b>listhtml</b></a>'." </td><td> List all files (*.html) </td></tr>\r\n";
         echo '</table>';
 
-        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank">Download ToDoList v8</a>';
+        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank"><small>Download ToDoList v8.2<small></a>';
     }
 
 }
