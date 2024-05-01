@@ -19,12 +19,23 @@ Homestead.json
 
 # Rocketeer PHP task runner and deployment package. https://github.com/rocketeers/rocketeer
 .rocketeer/
-
+ZFINISHED.hidden
+backup.hidden
+$Recycle.Bin
 
 # Todolist
 *.tdl
 *.txt
 *.csv
+*.html
+*.xml
+*.url
+*.tsk
+*.inf
+*.mm
+*.smmx
+*.adu
+*.delta
 *.---
 
 # XMind
