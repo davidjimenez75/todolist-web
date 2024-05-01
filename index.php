@@ -17,7 +17,7 @@ $todolist = new TodoList;
 
 class TodoList
 {
-    public $version = "2023.11.05.1205";
+    public $version = "2024.05.01.1047";
     public $a_csv = array();
     public $a_tdl = array();
     public $a_html = array();
@@ -121,7 +121,9 @@ class TodoList
     {
         echo '<html>
         <head>
+            <title>todolist</title>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">                
+            <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
            <style type="text/css"><!--
               html { 
                   font-size: 11px!important; 
@@ -187,7 +189,9 @@ class TodoList
     {
         echo '<html>
         <head>
+            <title>todolist</title>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">        
+            <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">            
            <style type="text/css"><!--
               html { 
                   font-size: 11px!important; 
@@ -253,18 +257,21 @@ class TodoList
     {
         echo '<html>
         <head>
+            <title>tdh</title>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+            <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
            <style type="text/css"><!--
               html { 
-                  font-size: 11px!important; 
                   font-family: courier new;
+                  margin-left:0.5em;
               }
               a {
-                  font-size: 11px!important; 
+                  font-size: 1.1em!important; 
                   font-family: courier new;
      
                   text-decoration:none;
                   color:blue;
+                  line-height: 2em;
               }
               a:hover {
                   color:red;
@@ -273,10 +280,54 @@ class TodoList
         </head>
         <body>';
         $count=0;
-        echo '<table border="0" cellspacing="0" cellpadding="2">'."\r\n";        
+        echo '<table border="0" cellspacing="0" cellpadding="0">'."\r\n";        
         foreach($this->a_html as $key=>$val)
         {
-            echo '<tr><td><a href="./'.$val.'" style="text-decoration:none;" target="_blank">'.substr($val,2).'</a>'."</td></tr>";
+            echo '<tr><td>';
+            echo '<span style="color:white; font-size:1em;">- ';
+            echo '<a href="https://wiki.dj75.net/doku.php?id='.str_replace('--',':',basename(substr($val,0,-5))).'" target="_blank">⬜</a>';            
+            echo '[[:</span>';
+            echo '<a href="./'.$val.'" style="text-decoration:none;" target="_blank">';
+            //echo '<span style="color:white">- [[:</span>'.str_replace('/',':',substr(basename($val),2,-5)).'<span style="color:white">]]</span>';
+            echo str_replace('--',':',basename(substr($val,0,-5)));
+            echo '<span style="color:white">]]</span>';
+            echo '</a>';
+
+            // FOLDERICO COLORS
+            $folder=dirname(realpath($val));          
+            $color = $this->folderico($folder);
+            if ($color=="red") echo "🟥";
+            elseif ($color=="orange") echo "🟧";
+            elseif ($color=="lemon") echo "🟨";
+            elseif ($color=="green") echo "🟩";
+            elseif ($color=="black") echo "⬛";
+            elseif ($color=="gray") echo "🟫";
+            elseif ($color=="brown") echo "🟫";
+            elseif ($color=="violet") echo "🟪";
+            elseif ($color=="azure") echo "🟦";
+            elseif ($color=="blue") echo "🟦";
+            elseif ($color=="white") echo "⬜";
+            elseif ($color=="high-priority") echo "1️⃣";
+            elseif ($color=="normal-priority") echo "2️⃣";
+            elseif ($color=="low-priority") echo "3️⃣";
+            elseif ($color=="approved") echo "✅";
+            elseif ($color=="pending") echo "📌";
+            elseif ($color=="rejected") echo "❌";
+            elseif ($color=="private") echo "🔒";
+            elseif ($color=="important") echo "🔥";
+            elseif ($color=="work") echo "👷‍♂️";
+            elseif ($color=="temp") echo "⌛";
+            elseif ($color=="favorites") echo "⭐";
+            elseif ($color=="internet") echo "🔍";
+            elseif ($color=="star-1") echo "⭐";
+            elseif ($color=="star-2") echo "⭐⭐";
+            elseif ($color=="star-3") echo "⭐⭐⭐";
+            elseif ($color=="star-4") echo "⭐⭐⭐⭐";
+            elseif ($color=="star-5") echo "⭐⭐⭐⭐⭐";
+            
+            
+            
+            echo '</td></tr>';
         }
         echo '</table>';
         echo '</body>';
@@ -886,6 +937,70 @@ class TodoList
         }
     }
 
+    /**
+     * Return the folder color if usin folderico icons in that folder
+     */
+    function folderico($path)
+    {
+        if (file_exists($path.'/folderico-red.ico')){
+            return ("red");
+        }elseif (file_exists($path.'/folderico-orange.ico')) {
+            return ("orange");
+        }elseif (file_exists($path.'/folderico-green.ico')) {
+            return ("green");
+        }elseif (file_exists($path.'/folderico-gray.ico')) {
+            return ("gray");
+        }elseif (file_exists($path.'/folderico-lemon.ico')) {
+            return ("lemon");
+        }elseif (file_exists($path.'/folderico-black.ico')) {
+            return ("black");
+        }elseif (file_exists($path.'/folderico-azure.ico')) {
+            return ("azure");
+        }elseif (file_exists($path.'/folderico-blue.ico')) {
+            return ("blue");
+        }elseif (file_exists($path.'/folderico-brown.ico')) {
+            return ("brown");
+        }elseif (file_exists($path.'/folderico-white.ico')) {
+            return ("white");
+        }elseif (file_exists($path.'/folderico-high-priority.ico')) {
+            return ("high-priority");
+        }elseif (file_exists($path.'/folderico-normal-priority.ico')) {
+            return ("normal-priority");
+        }elseif (file_exists($path.'/folderico-low-priority.ico')) {
+            return ("low-priority");
+        }elseif (file_exists($path.'/folderico-approved.ico')) {
+            return ("approved");
+        }elseif (file_exists($path.'/folderico-pending.ico')) {
+            return ("pending");
+        }elseif (file_exists($path.'/folderico-rejected.ico')) {
+            return ("rejected");
+        }elseif (file_exists($path.'/folderico-private.ico')) {
+            return ("private");
+        }elseif (file_exists($path.'/folderico-important.ico')) {
+            return ("important");
+        }elseif (file_exists($path.'/folderico-work.ico')) {
+            return ("work");
+        }elseif (file_exists($path.'/folderico-temp.ico')) {
+            return ("temp");
+        }elseif (file_exists($path.'/folderico-favorites.ico')) {
+            return ("favorites");
+        }elseif (file_exists($path.'/folderico-internet.ico')) {
+            return ("internet");
+        }elseif (file_exists($path.'/folderico-star-1.ico')) {
+            return ("star-1");
+        }elseif (file_exists($path.'/folderico-star-2.ico')) {
+            return ("star-2");
+        }elseif (file_exists($path.'/folderico-star-3.ico')) {
+            return ("star-3");
+        }elseif (file_exists($path.'/folderico-star-4.ico')) {
+            return ("star-4");
+        }elseif (file_exists($path.'/folderico-star-5.ico')) {
+            return ("star-5");
+        }else{
+            return ("none");
+        }
+    }
+
 
     /**
      * Show help on browser
@@ -894,7 +1009,9 @@ class TodoList
     {
         echo '<html>
         <head>
+            <title>todolist</title>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+            <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
            <style type="text/css"><!--
               html { 
                   font-size: 12px!important; 
@@ -935,7 +1052,7 @@ class TodoList
         echo '<tr><td><a href="?mode=listhtml" target="_blank"><b>listhtml</b></a>'." </td><td> List all files (*.html) </td></tr>\r\n";
         echo '</table>';
 
-        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank"><small>Download ToDoList v8.2<small></a>';
+        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank"><small>ToDoList 8.3.0.0 (Stable Release)<small></a>';
     }
 
 }
