@@ -23,22 +23,29 @@ ZFINISHED.hidden
 backup.hidden
 $Recycle.Bin
 
-# Todolist
-*.tdl
-*.txt
-*.csv
-*.html
-*.xml
-*.url
-*.tsk
-*.inf
-*.mm
-*.smmx
-*.adu
-*.delta
+# EXTENSIONS IGNORED
 *.---
+*.adu
+*.csv
+*.delta
+*.html
+*.ico
+*.inf
+*.ini
+*.jpg
+*.log
+*.mm
+*.pdf
+*.smmx
+*.tdl
+*.tsk
+*.txt
+*.url
+*.url
+*.xml
 
-# XMind
+
+# XMIND IGNORED
 *.xmind
 composer.lock
 todolist-web/desktop.ini
