@@ -17,7 +17,7 @@ $todolist = new TodoList;
 
 class TodoList
 {
-    public $version = "2024.05.01.1047";
+    public $version = "2024.10.12.1343";
     public $a_csv = array();
     public $a_tdl = array();
     public $a_html = array();
@@ -284,47 +284,65 @@ class TodoList
         foreach($this->a_html as $key=>$val)
         {
             echo '<tr><td>';
-            echo '<span style="color:white; font-size:1em;">- ';
-            echo '<a href="https://wiki.dj75.net/doku.php?id='.str_replace('--',':',basename(substr($val,0,-5))).'" target="_blank">⬜</a>';            
-            echo '[[:</span>';
-            echo '<a href="./'.$val.'" style="text-decoration:none;" target="_blank">';
-            //echo '<span style="color:white">- [[:</span>'.str_replace('/',':',substr(basename($val),2,-5)).'<span style="color:white">]]</span>';
-            echo str_replace('--',':',basename(substr($val,0,-5)));
-            echo '<span style="color:white">]]</span>';
-            echo '</a>';
 
             // FOLDERICO COLORS
             $folder=dirname(realpath($val));          
             $color = $this->folderico($folder);
-            if ($color=="red") echo "🟥";
-            elseif ($color=="orange") echo "🟧";
-            elseif ($color=="lemon") echo "🟨";
-            elseif ($color=="green") echo "🟩";
-            elseif ($color=="black") echo "⬛";
-            elseif ($color=="gray") echo "🟫";
-            elseif ($color=="brown") echo "🟫";
-            elseif ($color=="violet") echo "🟪";
-            elseif ($color=="azure") echo "🟦";
-            elseif ($color=="blue") echo "🟦";
-            elseif ($color=="white") echo "⬜";
-            elseif ($color=="high-priority") echo "1️⃣";
-            elseif ($color=="normal-priority") echo "2️⃣";
-            elseif ($color=="low-priority") echo "3️⃣";
-            elseif ($color=="approved") echo "✅";
-            elseif ($color=="pending") echo "📌";
-            elseif ($color=="rejected") echo "❌";
-            elseif ($color=="private") echo "🔒";
-            elseif ($color=="important") echo "🔥";
-            elseif ($color=="work") echo "👷‍♂️";
-            elseif ($color=="temp") echo "⌛";
-            elseif ($color=="favorites") echo "⭐";
-            elseif ($color=="internet") echo "🔍";
-            elseif ($color=="star-1") echo "⭐";
-            elseif ($color=="star-2") echo "⭐⭐";
-            elseif ($color=="star-3") echo "⭐⭐⭐";
-            elseif ($color=="star-4") echo "⭐⭐⭐⭐";
-            elseif ($color=="star-5") echo "⭐⭐⭐⭐⭐";
-            
+            if ($color==null){
+                // By default, not folderico colored folders
+                echo '<span style="color:white; font-size:1em;">- ';
+                echo '<a href="https://wiki.dj75.net/doku.php?id='.str_replace('--',':',basename(substr($val,0,-5))).'" target="_blank">⬜</a>';            
+                echo '[[:</span>';
+                echo '<a href="./'.$val.'" style="text-decoration:none;" target="_blank">';
+                //echo '<span style="color:white">- [[:</span>'.str_replace('/',':',substr(basename($val),2,-5)).'<span style="color:white">]]</span>';
+                echo str_replace('--',':',basename(substr($val,0,-5)));
+                echo '<span style="color:white">]]</span>';
+                echo '</a>';                
+            }else{
+                // Folderico colored folders compatibility
+                echo '<span style="color:white; font-size:1em;">- ';
+                echo '<a href="https://wiki.dj75.net/doku.php?id='.str_replace('--',':',basename(substr($val,0,-5))).'" target="_blank">';
+                               
+                if ($color=="red") echo "-🟥";
+                elseif ($color=="orange") echo "🟧";
+                elseif ($color=="lemon") echo "🟨";
+                elseif ($color=="green") echo "🟩";
+                elseif ($color=="black") echo "⬛";
+                elseif ($color=="gray") echo "🟫";
+                elseif ($color=="brown") echo "🟫";
+                elseif ($color=="violet") echo "🟪";
+                elseif ($color=="azure") echo "🟦";
+                elseif ($color=="blue") echo "🟦";
+                elseif ($color=="white") echo "⬜";
+                elseif ($color=="high-priority") echo "1️⃣";
+                elseif ($color=="normal-priority") echo "2️⃣";
+                elseif ($color=="low-priority") echo "3️⃣";
+                elseif ($color=="approved") echo "✅";
+                elseif ($color=="pending") echo "📌";
+                elseif ($color=="rejected") echo "❌";
+                elseif ($color=="private") echo "🔒";
+                elseif ($color=="important") echo "🔥";
+                elseif ($color=="work") echo "👷‍♂️";
+                elseif ($color=="temp") echo "⌛";
+                elseif ($color=="favorites") echo "⭐";
+                elseif ($color=="internet") echo "🔍";
+                elseif ($color=="star-1") echo "⭐";
+                elseif ($color=="star-2") echo "⭐⭐";
+                elseif ($color=="star-3") echo "⭐⭐⭐";
+                elseif ($color=="star-4") echo "⭐⭐⭐⭐";
+                elseif ($color=="star-5") echo "⭐⭐⭐⭐⭐";
+                echo '</a>';
+
+
+                echo '[[:</span>';
+                echo '<a href="./'.$val.'" style="text-decoration:none;" target="_blank">';
+                //echo '<span style="color:white">- [[:</span>'.str_replace('/',':',substr(basename($val),2,-5)).'<span style="color:white">]]</span>';
+                echo str_replace('--',':',basename(substr($val,0,-5)));
+                echo '<span style="color:white">]]</span>';
+                echo '</a>';
+    
+            }
+
             
             
             echo '</td></tr>';
@@ -997,7 +1015,7 @@ class TodoList
         }elseif (file_exists($path.'/folderico-star-5.ico')) {
             return ("star-5");
         }else{
-            return ("none");
+            return (null);
         }
     }
 
@@ -1052,7 +1070,7 @@ class TodoList
         echo '<tr><td><a href="?mode=listhtml" target="_blank"><b>listhtml</b></a>'." </td><td> List all files (*.html) </td></tr>\r\n";
         echo '</table>';
 
-        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank"><small>ToDoList 8.3.0.0 (Stable Release)<small></a>';
+        echo '<br><br><br><a href="http://www.abstractspoon.com" target="_blank"><small>ToDoList 9.0.B1 (Beta Release)<small></a>';
     }
 
 }
